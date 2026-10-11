@@ -1,0 +1,444 @@
+#:kivy 2.2.0
+#:import Graph kivy_garden.graph.Graph
+#:import MeshLinePlot kivy_garden.graph.MeshLinePlot
+#:import PieChart kivy_garden.graph.PieChart
+#:import os os
+
+# --- Navigation Bar ---
+<NavBar@BoxLayout>:
+    size_hint_y: None; height: '50dp'; padding: '10dp'; spacing: '10dp'
+    canvas.before:
+        Color: rgba: 0.15, 0.15, 0.2, 1
+        Rectangle: pos: self.pos; size: self.size
+    Button: text: 'Tracker'; on_release: app.root.current = 'tracker'
+    Button: text: 'Analytics'; on_release: app.root.current = 'analytics'
+    Button: text: 'Budgets'; on_release: app.root.current = 'budgets'
+    Button: text: 'Categories'; on_release: app.root.current = 'categories'
+    Button: text: 'Recurring'; on_release: app.root.current = 'recurring'
+
+# --- Popups ---
+<ConfirmDeletePopup>:
+    orientation: 'vertical'; padding: '10dp'; spacing: '10dp'
+    Label:
+        text: 'Are you sure you want to delete this transaction?'
+        font_size: '18sp'; color: 1, 1, 1, 1
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+        Button:
+            text: 'Yes, Delete'; background_color: 0.9, 0.3, 0.3, 1
+            on_release: root.main_root.delete_transaction(root.popup, root.transaction_id)
+        Button:
+            text: 'Cancel'; background_color: 0.4, 0.4, 0.4, 1
+            on_release: root.popup.dismiss()
+
+<EditPopup>:
+    orientation: 'vertical'; padding: '15dp'; spacing: '10dp'
+    Label:
+        text: 'Edit Transaction Details'; color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+        ToggleButton:
+            id: toggle_income; text: 'Income'; group: 'edit_type'
+            on_state: if self.state == 'down': self.background_color = (0.2, 0.8, 0.4, 1); else: self.background_color = (0.4, 0.4, 0.4, 1)
+        ToggleButton:
+            id: toggle_expense; text: 'Expense'; group: 'edit_type'
+            on_state: if self.state == 'down': self.background_color = (0.9, 0.3, 0.3, 1); else: self.background_color = (0.4, 0.4, 0.4, 1)
+    TextInput:
+        id: input_amount; hint_text: 'Amount'; input_filter: 'float'
+    Spinner:
+        id: edit_category_spinner; text: 'Select Category'
+    TextInput:
+        id: input_description; hint_text: 'Description'
+    TextInput:
+        id: input_date; hint_text: 'Date (YYYY-MM-DD)'
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '50sp'; spacing: '10dp'
+        Button:
+            text: 'Save Changes'
+            on_release: root.main_root.save_edited_transaction(root.popup, root.transaction_data['id'])
+        Button:
+            text: 'Cancel'; background_color: 0.4, 0.4, 0.4, 1
+            on_release: root.popup.dismiss()
+
+<ConfirmDeleteBudgetPopup>:
+    orientation: 'vertical'; padding: '10dp'; spacing: '10dp'
+    Label:
+        text: f'Delete budget for "{root.category}"?'
+        font_size: '18sp'; color: 1, 1, 1, 1
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+        Button:
+            text: 'Yes, Delete'; background_color: 0.9, 0.3, 0.3, 1
+            on_release: root.main_root.delete_budget(root.popup, root.category)
+        Button:
+            text: 'Cancel'; background_color: 0.4, 0.4, 0.4, 1
+            on_release: root.popup.dismiss()
+
+<ExportPopup>:
+    orientation: 'vertical'; padding: '10dp'; spacing: '10dp'
+    Label:
+        text: 'Choose a directory and filename'
+        color: 1, 1, 1, 1; font_size: '18sp'; size_hint_y: None; height: '30sp'
+    FileChooserIconView:
+        id: filechooser; path: os.path.expanduser('~'); filters: ['*.csv']
+    TextInput:
+        id: filename_input; hint_text: 'Enter filename (e.g., my_transactions.csv)'; size_hint_y: None; height: '40sp'; multiline: False
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '50sp'; spacing: '10dp'
+        Button:
+            text: 'Export'
+            on_release: root.main_root.perform_export(root.popup, root.ids.filechooser.path, root.ids.filename_input.text)
+        Button:
+            text: 'Cancel'; background_color: 0.4, 0.4, 0.4, 1
+            on_release: root.popup.dismiss()
+
+<ConfirmDeleteCategoryPopup>:
+    orientation: 'vertical'; padding: '10dp'; spacing: '10dp'
+    Label:
+        text: f'Delete category "{root.category}"?'
+        font_size: '18sp'; color: 1, 1, 1, 1
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+        Button:
+            text: 'Yes, Delete'; background_color: 0.9, 0.3, 0.3, 1
+            on_release: root.main_root.delete_category(root.popup, root.category)
+        Button:
+            text: 'Cancel'; background_color: 0.4, 0.4, 0.4, 1
+            on_release: root.popup.dismiss()
+
+<ConfirmDeleteRecurringPopup>:
+    orientation: 'vertical'; padding: '10dp'; spacing: '10dp'
+    Label:
+        text: 'Are you sure you want to delete this recurring transaction?'
+        font_size: '18sp'; color: 1, 1, 1, 1
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+        Button:
+            text: 'Yes, Delete'; background_color: 0.9, 0.3, 0.3, 1
+            on_release: root.main_root.delete_recurring(root.popup, root.template_id)
+        Button:
+            text: 'Cancel'; background_color: 0.4, 0.4, 0.4, 1
+            on_release: root.popup.dismiss()
+
+# --- Rows ---
+<TransactionRow>:
+    transaction_data: root.transaction_data
+    orientation: 'horizontal'; size_hint_y: None; height: self.minimum_height; padding: '5dp'; spacing: '10dp'
+    canvas.before:
+        Color: rgba: 0.15, 0.15, 0.15, 1
+        Rectangle: pos: self.pos; size: self.size; radius: [5,]
+    BoxLayout:
+        orientation: 'horizontal'; spacing: '10dp'
+        Label:
+            text: root.transaction_data['type']; color: root.transaction_data['color']; size_hint_x: 0.15; bold: True; halign: 'center'
+        Label:
+            text: root.transaction_data['amount']; color: root.transaction_data['color']; size_hint_x: 0.2; bold: True
+        Label:
+            text: root.transaction_data['category']; color: 0.8, 0.8, 0.8, 1; size_hint_x: 0.2
+        Label:
+            text: root.transaction_data['description']; color: 0.6, 0.6, 0.6, 1; size_hint_x: 0.25
+        Label:
+            text: root.transaction_data['date']; color: 0.6, 0.6, 0.6, 1; size_hint_x: 0.2; halign: 'right'
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_x: None; width: '120dp'; spacing: '5dp'
+        Button:
+            text: 'Edit'; size_hint_x: None; width: '55dp'; font_size: '14sp'; background_color: 0.2, 0.6, 1, 1
+            on_release: app.root.get_screen('tracker').show_edit_popup(root.transaction_data)
+        Button:
+            text: 'Delete'; size_hint_x: None; width: '55dp'; font_size: '14sp'; background_color: 0.8, 0.2, 0.2, 1
+            on_release: app.root.get_screen('tracker').show_delete_popup(root.transaction_data)
+
+<BudgetRow@BoxLayout>:
+    category: ''; budget: ''; spent: ''; remaining: ''; percentage: 0; bar_color: (1,1,1,1)
+    orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '10dp'; spacing: '5dp'
+    canvas.before:
+        Color: rgba: 0.15, 0.15, 0.15, 1
+        Rectangle: pos: self.pos; size: self.size; radius: [5,]
+    Label:
+        text: root.category; color: 1, 1, 1, 1; font_size: '18sp'; bold: True; size_hint_y: None; height: '25sp'
+    BoxLayout:
+        orientation: 'horizontal'; size_hint_y: None; height: '25sp'
+        Label: text: f'Budget: {root.budget}'; color: 0.8, 0.8, 0.8, 1
+        Label: text: f'Spent: {root.spent}'; color: 0.8, 0.8, 0.8, 1
+        Label: text: f'Remaining: {root.remaining}'; color: root.bar_color; bold: True
+    ProgressBar:
+        max: 100; value: root.percentage; size_hint_y: None; height: '20dp'
+        canvas.before:
+            Color: rgba: 0.3, 0.3, 0.3, 1
+            Rectangle: pos: self.pos; size: self.size; radius: [5,]
+        Color: rgba: root.bar_color
+        Rectangle: pos: self.x, self.y; size: self.width * (self.value / self.max) if self.max else 0, self.height; radius: [5,]
+    Button:
+        text: 'Delete Budget'; size_hint_y: None; height: '35sp'; background_color: 0.7, 0.2, 0.2, 1
+        on_release: app.root.get_screen('budgets').show_delete_budget_popup(root.category)
+
+<CategoryRow@BoxLayout>:
+    name: ''
+    orientation: 'horizontal'; size_hint_y: None; height: self.minimum_height; padding: '10dp'; spacing: '10dp'
+    canvas.before:
+        Color: rgba: 0.15, 0.15, 0.15, 1
+        Rectangle: pos: self.pos; size: self.size; radius: [5,]
+    Label:
+        text: root.name; color: 1, 1, 1, 1; font_size: '18sp'
+    Button:
+        text: 'Delete'; size_hint_x: None; width: '80dp'; background_color: 0.7, 0.2, 0.2, 1
+        on_release: app.root.get_screen('categories').show_delete_category_popup(root.name)
+
+<RecurringRow@BoxLayout>:
+    id: 0; type: ''; amount: ''; category: ''; description: ''; frequency: ''; next_due: ''; color: (1,1,1,1)
+    orientation: 'horizontal'; size_hint_y: None; height: self.minimum_height; padding: '5dp'; spacing: '10dp'
+    canvas.before:
+        Color: rgba: 0.15, 0.15, 0.15, 1
+        Rectangle: pos: self.pos; size: self.size; radius: [5,]
+    BoxLayout:
+        orientation: 'vertical'; spacing: '2dp'
+        Label:
+            text: f'{root.description} ({root.frequency})'
+            color: 1, 1, 1, 1; font_size: '16sp'; bold: True
+        Label:
+            text: f'{root.amount} for {root.category} | Next: {root.next_due}'
+            color: 0.7, 0.7, 0.7, 1; font_size: '14sp'
+    Label:
+        text: root.type; color: root.color; size_hint_x: None; width: '80dp'; halign: 'center'; bold: True
+    Button:
+        text: 'Delete'; size_hint_x: None; width: '80dp'; background_color: 0.7, 0.2, 0.2, 1
+        on_release: app.root.get_screen('recurring').show_delete_recurring_popup(root.id)
+
+# --- Screen Definitions ---
+<FinancialTrackerScreen>:
+    name: 'tracker'
+    BoxLayout:
+        orientation: 'vertical'
+        NavBar:
+        ScrollView:
+            BoxLayout:
+                orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '20dp'; spacing: '15dp'
+                canvas.before:
+                    Color: rgba: 0.1, 0.1, 0.1, 1
+                    Rectangle: pos: self.pos; size: self.size
+                BoxLayout:
+                    orientation: 'horizontal'; size_hint_y: None; height: '100dp'; spacing: '15dp'
+                    canvas.before:
+                        Color: rgba: 0.2, 0.2, 0.3, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    BoxLayout:
+                        orientation: 'vertical'; padding: '10dp'
+                        Label: text: 'Total Balance'; color: 1, 1, 1, 1; font_size: '18sp'
+                        Label: text: f'${root.total_balance:,.2f}'; color: (0.2, 0.9, 0.5, 1) if root.total_balance >= 0 else (0.9, 0.3, 0.3, 1); font_size: '28sp'; bold: True
+                    BoxLayout:
+                        orientation: 'vertical'; padding: '10dp'
+                        Label: text: 'Income'; color: 1, 1, 1, 1; font_size: '18sp'
+                        Label: text: f'${root.total_income:,.2f}'; color: 0.2, 0.8, 0.4, 1; font_size: '24sp'; bold: True
+                    BoxLayout:
+                        orientation: 'vertical'; padding: '10dp'
+                        Label: text: 'Expenses'; color: 1, 1, 1, 1; font_size: '18sp'
+                        Label: text: f'${root.total_expense:,.2f}'; color: 0.9, 0.3, 0.3, 1; font_size: '24sp'; bold: True
+                    Button:
+                        text: 'Export Data'; size_hint_x: None; width: '120dp'
+                        on_release: root.show_export_popup()
+                BoxLayout:
+                    orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '15dp'; spacing: '10dp'
+                    canvas.before:
+                        Color: rgba: 0.18, 0.18, 0.25, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    Label: text: 'Add New Transaction'; color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        ToggleButton:
+                            id: toggle_income; text: 'Income'; group: 'transaction_type'
+                            on_state: if self.state == 'down': self.background_color = (0.2, 0.8, 0.4, 1); else: self.background_color = (0.4, 0.4, 0.4, 1)
+                        ToggleButton:
+                            id: toggle_expense; text: 'Expense'; group: 'transaction_type'; state: 'down'
+                            on_state: if self.state == 'down': self.background_color = (0.9, 0.3, 0.3, 1); else: self.background_color = (0.4, 0.4, 0.4, 1)
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        TextInput: id: input_amount; hint_text: 'Amount (e.g., 50.00)'; input_filter: 'float'
+                        Spinner:
+                            id: category_spinner; text: 'Select Category'
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        TextInput: id: input_description; hint_text: 'Description (optional)'
+                        TextInput: id: input_date; hint_text: 'Date (YYYY-MM-DD)'
+                    Button:
+                        text: 'Add Transaction'; size_hint_y: None; height: '50sp'
+                        on_release: root.add_transaction()
+                BoxLayout:
+                    orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '15dp'; spacing: '10dp'
+                    canvas.before:
+                        Color: rgba: 0.25, 0.25, 0.35, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    Label: text: 'Search & Filter'; color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'
+                    TextInput:
+                        id: search_input; hint_text: 'Search by description...'
+                        on_text_validate: root.update_data()
+                        on_text: root.update_data()
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        Spinner:
+                            id: filter_category_spinner; text: 'All Categories'
+                            on_text: root.update_data()
+                        TextInput:
+                            id: start_date_input; hint_text: 'Start Date (YYYY-MM-DD)'; on_text_validate: root.update_data()
+                        TextInput:
+                            id: end_date_input; hint_text: 'End Date (YYYY-MM-DD)'; on_text_validate: root.update_data()
+                    Button:
+                        text: 'Clear Filters'; size_hint_y: None; height: '40sp'; background_color: 0.4, 0.4, 0.4, 1
+                        on_release:
+                            root.ids.search_input.text = ''; root.ids.filter_category_spinner.text = 'All Categories'
+                            root.ids.start_date_input.text = ''; root.ids.end_date_input.text = ''; root.update_data()
+                Label:
+                    text: 'Transaction History'; color: 1, 1, 1, 1; font_size: '22sp'; size_hint_y: None; height: '40sp'
+                RecycleView:
+                    id: rv; viewclass: 'TransactionRow'; data: root.transaction_list
+                    RecycleBoxLayout:
+                        default_size: None, dp(70); default_size_hint: 1, None; size_hint_y: None
+                        height: self.minimum_height; orientation: 'vertical'; spacing: '5dp'
+
+<AnalyticsScreen>:
+    name: 'analytics'
+    BoxLayout:
+        orientation: 'vertical'
+        NavBar:
+        ScrollView:
+            BoxLayout:
+                orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '20dp'; spacing: '20dp'
+                canvas.before:
+                    Color: rgba: 0.1, 0.1, 0.1, 1
+                    Rectangle: pos: self.pos; size: self.size
+                BoxLayout:
+                    orientation: 'vertical'; size_hint_y: None; height: '400dp'; padding: '15dp'; spacing: '10dp'
+                    canvas.before:
+                        Color: rgba: 0.18, 0.18, 0.25, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    Label:
+                        id: pie_chart_label; text: 'Loading...'; color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'; halign: 'center'
+                    PieChart:
+                        id: pie_chart; size_hint_y: None; height: '350dp'
+                BoxLayout:
+                    orientation: 'vertical'; size_hint_y: None; height: '400dp'; padding: '15dp'; spacing: '10dp'
+                    canvas.before:
+                        Color: rgba: 0.18, 0.18, 0.25, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    Label:
+                        id: line_chart_label; text: 'Loading...'; color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'; halign: 'center'
+                    Graph:
+                        id: line_chart; xlabel: 'Month'; ylabel: 'Amount ($)'; x_grid_label: True; y_grid_label: True; font_size: '12sp'; background_color: 0.15, 0.15, 0.15, 1; tick_color: 0.8, 0.8, 0.8, 1; border_color: 0.8, 0.8, 0.8, 1; label_options: {'color': (0.8, 0.8, 0.8, 1), 'bold': False}; size_hint_y: None; height: '350dp'
+
+<BudgetsScreen>:
+    name: 'budgets'
+    BoxLayout:
+        orientation: 'vertical'
+        NavBar:
+        ScrollView:
+            BoxLayout:
+                orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '20dp'; spacing: '15dp'
+                canvas.before:
+                    Color: rgba: 0.1, 0.1, 0.1, 1
+                    Rectangle: pos: self.pos; size: self.size
+                BoxLayout:
+                    orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '15dp'; spacing: '10dp'
+                    canvas.before:
+                        Color: rgba: 0.18, 0.18, 0.25, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    Label: text: 'Add / Update Budget'; color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        Spinner:
+                            id: budget_category_spinner; text: 'Select Category'
+                        TextInput:
+                            id: budget_amount_input; hint_text: 'Budget Amount'; input_filter: 'float'
+                    Button:
+                        text: 'Set Budget'; size_hint_y: None; height: '50sp'
+                        on_release: root.add_budget()
+                Label:
+                    text: 'Current Month Budgets'; color: 1, 1, 1, 1; font_size: '22sp'; size_hint_y: None; height: '40sp'
+                RecycleView:
+                    id: budget_rv; viewclass: 'BudgetRow'; data: root.budget_list
+                    RecycleBoxLayout:
+                        default_size: None, dp(100); default_size_hint: 1, None; size_hint_y: None
+                        height: self.minimum_height; orientation: 'vertical'; spacing: '10dp'
+
+<CategoriesScreen>:
+    name: 'categories'
+    BoxLayout:
+        orientation: 'vertical'
+        NavBar:
+        ScrollView:
+            BoxLayout:
+                orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '20dp'; spacing: '15dp'
+                canvas.before:
+                    Color: rgba: 0.1, 0.1, 0.1, 1
+                    Rectangle: pos: self.pos; size: self.size
+                BoxLayout:
+                    orientation: 'horizontal'; size_hint_y: None; height: '50dp'; spacing: '10dp'
+                    TextInput:
+                        id: new_category_input; hint_text: 'Enter new category name'; multiline: False
+                    Button:
+                        text: 'Add Category'; on_release: root.add_category()
+                Label:
+                    text: 'Existing Categories'; color: 1, 1, 1, 1; font_size: '22sp'; size_hint_y: None; height: '40sp'
+                RecycleView:
+                    id: categories_rv; viewclass: 'CategoryRow'; data: root.category_list
+                    RecycleBoxLayout:
+                        default_size: None, dp(50); default_size_hint: 1, None; size_hint_y: None
+                        height: self.minimum_height; orientation: 'vertical'; spacing: '5dp'
+
+<RecurringScreen>:
+    name: 'recurring'
+    BoxLayout:
+        orientation: 'vertical'
+        NavBar:
+        ScrollView:
+            BoxLayout:
+                orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '20dp'; spacing: '15dp'
+                canvas.before:
+                    Color: rgba: 0.1, 0.1, 0.1, 1
+                    Rectangle: pos: self.pos; size: self.size
+                BoxLayout:
+                    orientation: 'vertical'; size_hint_y: None; height: self.minimum_height; padding: '15dp'; spacing: '10dp'
+                    canvas.before:
+                        Color: rgba: 0.18, 0.18, 0.25, 1
+                        Rectangle: pos: self.pos; size: self.size; radius: [10,]
+                    Label:
+                        text: 'Add Recurring Transaction'
+                        color: 1, 1, 1, 1; font_size: '20sp'; size_hint_y: None; height: '30sp'
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        ToggleButton:
+                            id: recurring_toggle_income; text: 'Income'; group: 'recurring_type'
+                            on_state: if self.state == 'down': self.background_color = (0.2, 0.8, 0.4, 1); else: self.background_color = (0.4, 0.4, 0.4, 1)
+                        ToggleButton:
+                            id: recurring_toggle_expense; text: 'Expense'; group: 'recurring_type'; state: 'down'
+                            on_state: if self.state == 'down': self.background_color = (0.9, 0.3, 0.3, 1); else: self.background_color = (0.4, 0.4, 0.4, 1)
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        TextInput:
+                            id: recurring_amount_input; hint_text: 'Amount'; input_filter: 'float'
+                        Spinner:
+                            id: recurring_category_spinner; text: 'Select Category'
+                    BoxLayout:
+                        orientation: 'horizontal'; size_hint_y: None; height: '40sp'; spacing: '10dp'
+                        TextInput:
+                            id: recurring_description_input; hint_text: 'Description'
+                        Spinner:
+                            id: recurring_frequency_spinner; text: 'Monthly'; values: ['Weekly', 'Monthly', 'Yearly']
+                    TextInput:
+                        id: recurring_next_due_input; hint_text: 'Next Due Date (YYYY-MM-DD)'; size_hint_y: None; height: '40sp'
+                    Button:
+                        text: 'Add Recurring Template'; size_hint_y: None; height: '50sp'
+                        on_release: root.add_recurring_template()
+                Label:
+                    text: 'Active Recurring Transactions'; color: 1, 1, 1, 1; font_size: '22sp'; size_hint_y: None; height: '40sp'
+                RecycleView:
+                    id: recurring_rv; viewclass: 'RecurringRow'; data: root.recurring_list
+                    RecycleBoxLayout:
+                        default_size: None, dp(80); default_size_hint: 1, None; size_hint_y: None
+                        height: self.minimum_height; orientation: 'vertical'; spacing: '5dp'
+
+# --- Root ScreenManager ---
+ScreenManager:
+    FinancialTrackerScreen:
+    AnalyticsScreen:
+    BudgetsScreen:
+    CategoriesScreen:
+    RecurringScreen:
